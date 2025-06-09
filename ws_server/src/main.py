@@ -5,11 +5,11 @@ from typing import Any
 import redis
 from fastapi import FastAPI, WebSocket, WebSocketDisconnect
 
-from config import settings
-from db_handler import init_db_structure, get_asset_by_id
+from ws_server.src.config import settings
+from ws_server.src.db_handler import init_db_structure, get_asset_by_id
 import shared.src.db_handler as shared_db_handler
 from shared.src.db_handler import get_assets
-from ws_handler import WebSocketManager, ResponseActions, RequestActions
+from ws_server.src.ws_handler import WebSocketManager, ResponseActions, RequestActions
 
 logging.basicConfig(
     level=logging.INFO,

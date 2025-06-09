@@ -27,4 +27,4 @@ Then send messages with actions:
 2. `{"action": "subscribe", "assetId": 1}` - subscribes to asset with required id and client will receive asset rate history for the last 30 minutes
 and then rate updates for the asset every 1 second until switch to another asset or disconnect. If another subscribe message received, websocket context will be switched to new asset id.
 
-Main further improvement - make unit and integration tests.
+Main further improvement - make unit and integration tests, `pyproject.toml`.

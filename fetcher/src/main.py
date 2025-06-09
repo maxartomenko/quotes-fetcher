@@ -10,8 +10,8 @@ import aiohttp
 import redis
 import clickhouse_connect
 
-from config import settings
 import shared.src.db_handler as shared_db_handler
+from fetcher.src.config import settings
 
 RATES_URL: Final[str] = "https://rates.emcont.com/"
 logging.basicConfig(

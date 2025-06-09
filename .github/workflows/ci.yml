@@ -25,7 +25,7 @@ jobs:
           pip install -r shared/requirements-shared.txt
           pip install -r ws-server/requirements.txt
           pip install -r fetcher/requirements.txt
-          pip install pytest ruff
+          pip install pytest pytest-asyncio ruff
 
       - name: Run Ruff
         run: ruff check .

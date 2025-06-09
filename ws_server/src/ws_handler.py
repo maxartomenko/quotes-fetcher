@@ -9,7 +9,7 @@ import redis
 from fastapi import WebSocket
 import json
 
-from db_handler import get_quotes_for_period, Asset
+from ws_server.src.db_handler import get_quotes_for_period, Asset
 
 
 logging.basicConfig(
