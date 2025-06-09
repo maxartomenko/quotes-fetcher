@@ -1,0 +1,47 @@
+services:
+
+  redis:
+    image: redis:7
+    ports:
+      - "6379:6379"
+    command: redis-server --loglevel verbose
+
+  clickhouse:
+    image: clickhouse/clickhouse-server
+    ports:
+      - "8123:8123"
+      - "9000:9000"
+    env_file:
+      - .env
+    environment:
+      CLICKHOUSE_DEFAULT_ACCESS_MANAGEMENT: 1
+    volumes:
+      - clickhouse-data:/var/lib/clickhouse
+
+  ws-server:
+    image: ws-server
+    depends_on:
+      - redis
+      - clickhouse
+    ports:
+      - "8080:8080"
+    env_file:
+      - .env
+    environment:
+      - CLICKHOUSE_HOST=clickhouse
+      - REDIS_HOST=redis
+
+  quotes-fetcher:
+    image: quotes-fetcher
+    depends_on:
+      - redis
+      - clickhouse
+      - ws-server # required to setup DB structure
+    env_file:
+      - .env
+    environment:
+      - CLICKHOUSE_HOST=clickhouse
+      - REDIS_HOST=redis
+
+volumes:
+  clickhouse-data:
