@@ -32,11 +32,7 @@ class ResponseActions(enum.StrEnum):
 
 
 class WebSocketManager:
-    def __init__(
-        self,
-        *,
-        app: fastapi.FastAPI
-    ):
+    def __init__(self, *, app: fastapi.FastAPI):
         self.app = app
         self._connections: dict[int, dict[str, Any]] = {}
 
@@ -53,8 +49,8 @@ class WebSocketManager:
                 task.cancel()
                 try:
                     await task
-                except:
-                    pass
+                except asyncio.exceptions.CancelledError as e:
+                    logger.error(f"CancelledError {e}")
             self._connections.pop(ws_id, None)
 
     async def subscribe(self, *, ws: WebSocket, asset: Asset):
@@ -74,21 +70,18 @@ class WebSocketManager:
         websocket = entry["websocket"]
 
         quotes = await get_quotes_for_period(
-            clickhouse_client=ws.app.state.clickhouse,
-            asset_id=asset._id
+            clickhouse_client=ws.app.state.clickhouse, asset_id=asset._id
         )
-        await websocket.send_json({
-            "action": ResponseActions.ASSET_HISTORY,
-            "message": {
-                "points": [
-                    {
-                        "assetName": asset.name,
-                        **asdict(quote)
-                    }
-                    for quote in quotes
-                ]
+        await websocket.send_json(
+            {
+                "action": ResponseActions.ASSET_HISTORY,
+                "message": {
+                    "points": [
+                        {"assetName": asset.name, **asdict(quote)} for quote in quotes
+                    ]
+                },
             }
-        })
+        )
 
         async def push_quotes_loop():
             redis_client: redis.asyncio.Redis = self.app.state.redis
@@ -102,13 +95,12 @@ class WebSocketManager:
                     if msg["type"] != "message":
                         continue
                     quote = json.loads(msg["data"])
-                    await websocket.send_json({
-                        "action": ResponseActions.POINT,
-                        "message": {
-                            "assetName": asset.name,
-                            **quote
+                    await websocket.send_json(
+                        {
+                            "action": ResponseActions.POINT,
+                            "message": {"assetName": asset.name, **quote},
                         }
-                    })
+                    )
             except Exception as e:
                 logger.error(f"[push_quotes_loop] error: {e}")
             finally:
@@ -122,7 +114,6 @@ class WebSocketManager:
     async def send_error(self, ws_id: int, message: str):
         entry = self._connections.get(ws_id)
         if entry:
-            await entry["websocket"].send_json({
-                "action": ResponseActions.ERROR,
-                "message": message
-            })
+            await entry["websocket"].send_json(
+                {"action": ResponseActions.ERROR, "message": message}
+            )

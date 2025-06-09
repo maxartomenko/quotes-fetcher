@@ -13,7 +13,7 @@ import clickhouse_connect
 from config import settings
 import shared.src.db_handler as shared_db_handler
 
-RATES_URL: Final[str] = 'https://rates.emcont.com/'
+RATES_URL: Final[str] = "https://rates.emcont.com/"
 logging.basicConfig(
     level=logging.INFO,
     format="%(asctime)s [%(levelname)s] %(name)s: %(message)s",
@@ -34,7 +34,7 @@ async def worker() -> None:
         f"redis://{settings.REDIS_HOST}:{settings.REDIS_PORT}",
         db=settings.REDIS_DB,
         password=settings.REDIS_PASSWORD or None,
-        decode_responses=True
+        decode_responses=True,
     )
 
     clickhouse_client = await shared_db_handler.get_async_connection(
@@ -72,7 +72,7 @@ async def fetch_quotes(assets: dict[str, int]) -> list[AssetRate]:
             async with session.get(RATES_URL) as response:
                 response.raise_for_status()
                 response_text = await response.text()
-                if response_text := re.sub(r'^null\(|\);\s*$', '', response_text):
+                if response_text := re.sub(r"^null\(|\);\s*$", "", response_text):
                     response_body = json.loads(response_text)
     except aiohttp.ClientError as e:
         logger.error(f"HTTP error occurred: {e}")
@@ -84,34 +84,34 @@ async def fetch_quotes(assets: dict[str, int]) -> list[AssetRate]:
     timestamp = datetime.now(timezone.utc).timestamp()
     return [
         AssetRate(
-            asset_id=assets[rate['Symbol']],
+            asset_id=assets[rate["Symbol"]],
             timestamp=timestamp,
-            value = (rate.get('Bid', 0) + rate.get('Ask', 0)) / 2
+            value=(rate.get("Bid", 0) + rate.get("Ask", 0)) / 2,
         )
         for rate in response_body.get("Rates", [])
-        if rate['Symbol'] in assets
+        if rate["Symbol"] in assets
     ]
 
 
-async def publish_to_redis(quotes: list[AssetRate], redis_client: redis.asyncio.Redis) -> None:
+async def publish_to_redis(
+    quotes: list[AssetRate], redis_client: redis.asyncio.Redis
+) -> None:
     for quote in quotes:
         await redis_client.publish(
-            f"quote: {quote.asset_id}",
-            json.dumps(asdict(quote))
+            f"quote: {quote.asset_id}", json.dumps(asdict(quote))
         )
 
 
-async def save_to_db(quotes: list[AssetRate], clickhouse_client: clickhouse_connect.driver.AsyncClient) -> None:
+async def save_to_db(
+    quotes: list[AssetRate], clickhouse_client: clickhouse_connect.driver.AsyncClient
+) -> None:
     await clickhouse_client.insert(
         "quotes",
         [
-            [
-                quote.asset_id,
-                datetime.fromtimestamp(quote.timestamp),
-                quote.value
-            ] for quote in quotes
+            [quote.asset_id, datetime.fromtimestamp(quote.timestamp), quote.value]
+            for quote in quotes
         ],
-        column_names=["asset_id", "date", "value"]
+        column_names=["asset_id", "date", "value"],
     )
 
 

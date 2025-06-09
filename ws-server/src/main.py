@@ -17,13 +17,14 @@ logging.basicConfig(
 )
 logger = logging.getLogger(__name__)
 
+
 @asynccontextmanager
 async def lifespan(app: FastAPI):
     app.state.redis = await redis.asyncio.from_url(
         f"redis://{settings.REDIS_HOST}:{settings.REDIS_PORT}",
         db=settings.REDIS_DB,
         password=settings.REDIS_PASSWORD or None,
-        decode_responses=True
+        decode_responses=True,
     )
 
     clickhouse_client = await shared_db_handler.get_async_connection(
@@ -49,31 +50,25 @@ ws_manager = WebSocketManager(app=app)
 
 async def handle_assets(ws: WebSocket):
     assets = await get_assets(clickhouse_client=ws.app.state.clickhouse)
-    await ws.send_json({
-        "action": ResponseActions.ASSETS,
+    await ws.send_json(
+        {
+            "action": ResponseActions.ASSETS,
             "message": {
-                "assets": [
-                    {
-                        "id": _id,
-                        "name": asset
-                    } for _id, asset in assets.items()
-                ]
-            }
-        })
+                "assets": [{"id": _id, "name": asset} for _id, asset in assets.items()]
+            },
+        }
+    )
 
 
 async def handle_subscribe(ws: WebSocket, request: dict[str, Any]):
     asset_id = request.get("assetId", 0)
     asset = await get_asset_by_id(
-        clickhouse_client=ws.app.state.clickhouse,
-        asset_id=asset_id
+        clickhouse_client=ws.app.state.clickhouse, asset_id=asset_id
     )
     if asset is None:
-        await ws.send_json({
-            "action": ResponseActions.ERROR,
-            "code": 412,
-            "message": "Asset not found"
-        })
+        await ws.send_json(
+            {"action": ResponseActions.ERROR, "code": 412, "message": "Asset not found"}
+        )
         return
 
     await ws_manager.subscribe(ws=ws, asset=asset)
