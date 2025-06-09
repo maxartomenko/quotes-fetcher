@@ -1,4 +1,3 @@
 redis[async]
 clickhouse-connect
 dotenv
-pydevd-pycharm
